@@ -1,5 +1,5 @@
 # Another Man's Trash Backend
-Welcome to the backend repository for the Raw Material Marketplace mobile app. This Django-powered backend serves as the foundation for connecting buyers and sellers of raw materials in a user-friendly and efficient way.
+Welcome to the backend repository for the AMT mobile app. This Django-powered backend serves as the foundation for connecting buyers and sellers of raw materials in a user-friendly and efficient way.
 # Features
 - User Authentication: Secure user registration and login system for both buyers and sellers.
 - Product Listings: Allow sellers to list their raw materials with details such as product name, quantity, price, and specifications.
