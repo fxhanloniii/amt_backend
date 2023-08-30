@@ -8,3 +8,4 @@ myenv/
 *.egg-info/
 dist/
 build/
+.env
