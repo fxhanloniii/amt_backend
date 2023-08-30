@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -60,6 +61,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # CORS
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -148,3 +150,40 @@ ACCOUNT_USERNAME_REQUIRED = False
 
 # For email verification
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+
+# CORS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+]
+
+# REST FRAMEWORK 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# SOCIALS
+
+SOCIALACCOUNT_PROVIDERS = {
+    #Google
+    'google': {
+        'APP': {
+            'client_id': config('GOOGLE_CLIENT_ID'),
+            'secret': config('GOOGLE_SECRET_KEY'),
+            'key': 'KEY'
+        }
+    },
+    #META
+    'meta': {
+        'APP': {
+            'client_id': config('META_CLIENT_ID'),
+            'secret': config('META_SECRET_KEY'),
+            'key': 'KEY'
+        }
+    }
+
+}
