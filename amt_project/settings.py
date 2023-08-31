@@ -38,19 +38,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main_app', # main app
-    # OAUTH Apps
-    'dj_rest_auth',
-    'allauth',
-    'allauth.account',
-    'dj_rest_auth.registration',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.facebook',
+    'django.contrib.sites',
     # Rest Framework
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    # OAUTH Apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    
+    'main_app', # main app
 ]
 
 MIDDLEWARE = [
@@ -187,3 +189,5 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 
 }
+
+SITE_ID = 1
