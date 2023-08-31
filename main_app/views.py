@@ -6,10 +6,12 @@ from .serializers import ItemSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.permissions import AllowAny
+from .permissions import IsOwnerOrReadOnly
 
 # Create your views here.
 class Home(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         data = {
             "message": "Hello World"
@@ -19,3 +21,4 @@ class Home(APIView):
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+    permission_classes = [IsOwnerOrReadOnly]

@@ -34,13 +34,14 @@ class UserProfile(models.Model):
     is_seller = models.BooleanField(default=False)
     verification_status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('verified', 'Verified')], default='pending')
 
-    # Item Model
-    class Item(models.Model):
-        seller = models.ForeignKey(User, on_delete=models.CASCADE)
-        title = models.CharField(max_length=100)
-        description = models.TextField(max_length=500)
-        material = models.CharField(max_length=100)
-        price = models.FloatField()
-        date_posted = models.DateTimeField(auto_now_add=True)
-        is_available = models.BooleanField(default=True)
-        image_url = models.URLField(max_length=200, blank=True)
+
+# Item Model
+class Item(models.Model):
+    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    description = models.TextField(max_length=500)
+    material = models.CharField(max_length=100)
+    price = models.FloatField()
+    date_posted = models.DateTimeField(auto_now_add=True)
+    is_available = models.BooleanField(default=True)
+    image_url = models.URLField(max_length=200, blank=True)
