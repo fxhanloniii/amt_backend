@@ -3,11 +3,13 @@ from django.http import HttpResponse
 from rest_framework import viewsets
 from .models import Item
 from .serializers import ItemSerializer
+from .models import UserProfile
+from .serializers import UserProfileSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly, IsUserProfileOwnerOrReadOnly
 
 # Create your views here.
 class Home(APIView):
@@ -22,3 +24,8 @@ class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = [IsOwnerOrReadOnly]
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsUserProfileOwnerOrReadOnly]
