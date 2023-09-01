@@ -27,7 +27,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'description', 'location', 'material'] # Search Filters
-
+    # Recent posts filter?
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
