@@ -8,6 +8,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ItemSerializer(serializers.ModelSerializer):
+    seller_profile = UserProfileSerializer(source='seller.userprofile', read_only=True)  # Nested serialization
+    
     class Meta:
         model = Item
         fields = '__all__'
