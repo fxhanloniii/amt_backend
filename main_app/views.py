@@ -8,6 +8,7 @@ from .serializers import UserProfileSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import filters
 from rest_framework.permissions import AllowAny
 from .permissions import IsOwnerOrReadOnly, IsUserProfileOwnerOrReadOnly
 
@@ -24,8 +25,12 @@ class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = [IsOwnerOrReadOnly]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', 'description', 'location', 'material'] # Search Filters
+
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsUserProfileOwnerOrReadOnly]
+    # Lets Add a Search filter here too

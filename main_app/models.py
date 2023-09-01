@@ -40,6 +40,7 @@ class Item(models.Model):
     seller = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField(max_length=500)
+    location = models.CharField(max_length=100)
     material = models.CharField(max_length=100)
     price = models.FloatField()
     date_posted = models.DateTimeField(auto_now_add=True)
