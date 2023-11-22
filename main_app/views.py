@@ -11,8 +11,17 @@ from rest_framework import status
 from rest_framework import filters
 from rest_framework.permissions import AllowAny
 from .permissions import IsOwnerOrReadOnly, IsUserProfileOwnerOrReadOnly
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from dj_rest_auth.registration.views import VerifyEmailView
+from django.views import View
+from allauth.account.views import ConfirmEmailView
+from allauth.account.models import EmailConfirmation, EmailConfirmationHMAC
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
+
 class Home(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
@@ -34,3 +43,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsUserProfileOwnerOrReadOnly]
     # Lets Add a Search filter here too
+
+
+
+        
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_token_validity(request):
+    return Response({"status": "Token is valid"}, status=200)
+

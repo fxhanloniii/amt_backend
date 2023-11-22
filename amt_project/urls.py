@@ -14,8 +14,11 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, re_path, include
+from dj_rest_auth.registration.urls import urlpatterns as dj_rest_auth_registration_urlpatterns
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,3 +27,4 @@ urlpatterns = [
     path('social-auth/', include('allauth.socialaccount.urls')),
     path('', include('main_app.urls'))
 ]
+

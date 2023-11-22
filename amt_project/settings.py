@@ -63,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # CORS
+    # 'corsheaders.middleware.CorsMiddleware', # CORS
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -76,7 +76,7 @@ ROOT_URLCONF = 'amt_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Pointing to the custom templates directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -150,13 +150,19 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+
 # For email verification
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 # CORS
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:8000",
+# ]
 
 # REST FRAMEWORK 
 REST_FRAMEWORK = {
