@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from decouple import config
+# from channels.middleware import WebSocketMiddleware
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
     'dj_rest_auth',
     'dj_rest_auth.registration',
+    'channels',
     
     'main_app', # main app
 ]
@@ -63,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'channels.middleware.WebSocketMiddleware',
     # 'corsheaders.middleware.CorsMiddleware', # CORS
 ]
 
@@ -91,6 +94,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'amt_project.wsgi.application'
 
+# ASGI application
+ASGI_APPLICATION = "amt_project.routing.application"
+
+# Channels layer settings (using Redis as a message broker)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

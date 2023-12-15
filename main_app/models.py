@@ -37,12 +37,25 @@ class UserProfile(models.Model):
 
 # Item Model
 class Item(models.Model):
-    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, blank=True)
     title = models.CharField(max_length=100)
     description = models.TextField(max_length=500)
     location = models.CharField(max_length=100)
-    material = models.CharField(max_length=100)
+    material = models.CharField(max_length=100, blank=True)
     price = models.FloatField()
     date_posted = models.DateTimeField(auto_now_add=True)
-    is_available = models.BooleanField(default=True)
-    image_url = models.URLField(max_length=200, blank=True)
+    isForSale = models.BooleanField(default=True)
+    isPriceNegotiable = models.BooleanField(default=False)
+    category = models.CharField(max_length=50, blank=True)
+    image_url = models.URLField(max_length=200, blank=True) 
+
+
+class Conversation(models.Model):
+    participants = models.ManyToManyField(User, related_name='conversations')
+
+class Message(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
