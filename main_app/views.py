@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import viewsets
+from django.contrib.auth.models import User
 from .models import Item, Conversation, Message
 from .serializers import ItemSerializer, ConversationSerializer, MessageSerializer
 from .models import UserProfile
@@ -19,7 +20,8 @@ from django.views import View
 from allauth.account.views import ConfirmEmailView
 from allauth.account.models import EmailConfirmation, EmailConfirmationHMAC
 from django.shortcuts import get_object_or_404
-
+from rest_framework.exceptions import NotFound
+from rest_framework.decorators import action
 # Create your views here.
 
 class Home(APIView):
@@ -57,7 +59,20 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsUserProfileOwnerOrReadOnly]
-    # Lets Add a Search filter here too
+
+    # Override retrieve method to get UserProfile by User ID
+    @action(detail=True, url_path='user', methods=['get', 'put', 'patch'])
+    def retrieve_by_user(self, request, *args, **kwargs):
+        user_id = kwargs.get('pk')  # Get user ID from URL
+
+        # Find UserProfile by user ID
+        obj = UserProfile.objects.filter(user__pk=user_id).first()
+
+        if obj is None:
+            return Response({"detail": f"A UserProfile with user ID {user_id} does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(obj)
+        return Response(serializer.data)
 
 
 
@@ -76,3 +91,51 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer 
+
+from django.db.models import Q
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def start_conversation(request, item_id):
+    item = Item.objects.get(id=item_id)
+    seller = item.seller
+    buyer = request.user
+
+    # Get or create a conversation. Consider both the item and the participants.
+    conversation = Conversation.objects.filter(item=item).filter(
+        Q(participants=buyer) & Q(participants=seller)
+    ).first()
+
+    if not conversation:
+        conversation = Conversation.objects.create(item=item)
+        conversation.participants.set([seller, buyer])
+
+    # Handle the initial message
+    initial_message = request.data.get('initialMessage')
+    if initial_message:
+        Message.objects.create(
+            conversation=conversation,
+            sender=buyer,
+            text=initial_message
+        )
+
+    return Response({'conversation_id': conversation.id}, status=status.HTTP_201_CREATED)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_conversations(request):
+    user = request.user
+    conversations = Conversation.objects.filter(participants=user)
+    serializer = ConversationSerializer(conversations, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_conversation_messages(request, conversation_id):
+    try:
+        conversation = Conversation.objects.get(id=conversation_id, participants=request.user)
+        messages = Message.objects.filter(conversation=conversation).order_by('timestamp')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+    except Conversation.DoesNotExist:
+        return Response({'error': 'Conversation not found'}, status=status.HTTP_404_NOT_FOUND)

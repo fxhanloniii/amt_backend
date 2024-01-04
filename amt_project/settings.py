@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-jx-!k#8hdd1b!sslfqo(3w!qrf2v&e@k=xzyk)rh)5dm1=yt2#'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'channels',
     
     'main_app', # main app
+    'django_extensions',
+    'storages', # AWS S3
 ]
 
 MIDDLEWARE = [
@@ -68,6 +70,14 @@ MIDDLEWARE = [
     # 'channels.middleware.WebSocketMiddleware',
     # 'corsheaders.middleware.CorsMiddleware', # CORS
 ]
+
+# AWS settings
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME')
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
@@ -187,6 +197,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+}
+
+# Custom User Registration Serializer
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'main_app.serializers.CustomRegisterSerializer',
 }
 
 # SOCIALS

@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -34,6 +36,16 @@ class UserProfile(models.Model):
     is_seller = models.BooleanField(default=False)
     verification_status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('verified', 'Verified')], default='pending')
 
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        print(f"Creating UserProfile for user: {instance.username}")
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    print(f"Saving UserProfile for user: {instance.username}")
+    instance.userprofile.save()
 
 # Item Model
 class Item(models.Model):
@@ -52,6 +64,7 @@ class Item(models.Model):
 
 class Conversation(models.Model):
     participants = models.ManyToManyField(User, related_name='conversations')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='conversations', null=False)
 
 class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
