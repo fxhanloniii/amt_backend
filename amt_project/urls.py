@@ -23,7 +23,7 @@ from dj_rest_auth.registration.urls import urlpatterns as dj_rest_auth_registrat
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('dj-rest-auth/', include('dj_rest_auth.urls')),
-    path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
+    # path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
     path('social-auth/', include('allauth.socialaccount.urls')),
     path('', include('main_app.urls'))
 ]

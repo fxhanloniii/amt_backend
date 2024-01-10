@@ -9,6 +9,8 @@ from django.dispatch import receiver
 class UserProfile(models.Model):
     # Generic Attributes
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=30, blank=True)
     bio = models.TextField(max_length=500, blank=True)
     profile_picture_url = models.URLField(max_length=200, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -40,7 +42,11 @@ class UserProfile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         print(f"Creating UserProfile for user: {instance.username}")
-        UserProfile.objects.create(user=instance)
+        UserProfile.objects.create(
+            user=instance,
+            first_name=instance.first_name,
+            last_name=instance.last_name
+            )
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
@@ -59,7 +65,7 @@ class Item(models.Model):
     isForSale = models.BooleanField(default=True)
     isPriceNegotiable = models.BooleanField(default=False)
     category = models.CharField(max_length=50, blank=True)
-    image_url = models.URLField(max_length=200, blank=True) 
+    
 
 
 class Conversation(models.Model):
@@ -72,3 +78,6 @@ class Message(models.Model):
     text = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
+class ItemImage(models.Model):
+    item = models.ForeignKey(Item, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='item_images/')
