@@ -80,4 +80,4 @@ class Message(models.Model):
 
 class ItemImage(models.Model):
     item = models.ForeignKey(Item, related_name='images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='item_images/')
+    image = models.URLField(max_length=200)

@@ -11,24 +11,30 @@ class ItemImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ItemImage
         fields = ['id', 'image']
-        
+
 class MultipleItemImageSerializer(serializers.Serializer):
     image_urls = serializers.ListField(child=serializers.URLField())
 
 class ItemSerializer(serializers.ModelSerializer):
     images = ItemImageSerializer(many=True, read_only=True)
+    seller_profile = UserProfileSerializer(source='seller.userprofile', read_only=True)
 
     class Meta:
         model = Item
-        fields = ['id', 'title', 'description', 'location', 'material', 'price', 'date_posted', 'isForSale', 'isPriceNegotiable', 'category', 'seller', 'images']
+        fields = ['id', 'title', 'description', 'location', 'material', 'price', 'date_posted', 'isForSale', 'isPriceNegotiable', 'category', 'seller', 'seller_profile', 'images']
         read_only_fields = ('seller',)
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SlugRelatedField(read_only=True, slug_field='username')
+    sender_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
         fields = '__all__'
+    
+    def get_sender_profile(self, obj):
+        profile = UserProfile.objects.get(user=obj.sender)
+        return UserProfileSerializer(profile).data
 
 class ConversationSerializer(serializers.ModelSerializer):
     item_details = ItemSerializer(source='item', read_only=True)

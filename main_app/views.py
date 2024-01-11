@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import viewsets
 from django.contrib.auth.models import User
-from .models import Item, Conversation, Message
+from .models import Item, Conversation, Message, ItemImage
 from .serializers import ItemSerializer, ConversationSerializer, MessageSerializer, CustomRegisterSerializer
 from .models import UserProfile
 from .serializers import UserProfileSerializer
@@ -29,6 +29,7 @@ from django.db.models import Q
 from django.conf import settings
 import boto3
 import uuid
+from rest_framework.exceptions import ValidationError
 # Create your views here.
 
 class Home(APIView):
@@ -41,7 +42,7 @@ class Home(APIView):
 
 class CustomRegisterView(RegisterView):
     serializer_class = CustomRegisterSerializer
-    print("CustomRegisterView called")
+    
 
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
@@ -58,12 +59,15 @@ class ItemViewSet(viewsets.ModelViewSet):
         queryset = Item.objects.all()
         category = self.request.query_params.get('category', None)
         seller = self.request.query_params.get('seller', None)
+        location = self.request.query_params.get('location', None)
         
         if category:
             queryset = queryset.filter(category=category)
         if seller:
             queryset = queryset.filter(seller=seller)
-        
+        if location:
+            # Use Q objects for OR filtering on location, allowing for partial matches
+            queryset = queryset.filter(Q(location__icontains=location))
         return queryset
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -188,6 +192,7 @@ def upload_image(request):
     unique_id = uuid.uuid4()
     file_extension = image.name.split('.')[-1]
     file_name = f"uploads/{unique_id}.{file_extension}"
+    
 
     # Upload image to S3
     try:
@@ -220,14 +225,17 @@ def upload_image(request):
 @parser_classes([MultiPartParser, FormParser])
 def upload_item_data_and_images(request):
     try:
+        print("Received request for upload_item_data_and_images")
         # Extract item data from the request
         title = request.data.get('title')
+        print(f"Title: {title}")
         description = request.data.get('description')
         location = request.data.get('location')
         price = request.data.get('price')
-        isForSale = request.data.get('isForSale')
-        isPriceNegotiable = request.data.get('isPriceNegotiable')
+        isForSale = request.data.get('isForSale', 'false').lower() == 'true'
+        isPriceNegotiable = request.data.get('isPriceNegotiable', 'false').lower() == 'true'
         category = request.data.get('category')
+        seller = request.user
 
         # Save the item data (excluding images)
         item = Item(
@@ -238,9 +246,13 @@ def upload_item_data_and_images(request):
             isForSale=isForSale,
             isPriceNegotiable=isPriceNegotiable,
             category=category,
+            seller=seller,
         )
+        print(f"Saving item with title: {title}, description: ...")
+        item.full_clean()
         item.save()
-
+        print("Item saved successfully.")
+    
         uploaded_images = request.FILES.getlist('images')
         image_urls = []
 
@@ -249,7 +261,7 @@ def upload_item_data_and_images(request):
             unique_id = uuid.uuid4()
             file_extension = image.name.split('.')[-1]
             file_name = f"uploads/{unique_id}.{file_extension}"
-
+            print(f"Uploading image to S3: {file_name}")
             # Initialize S3 client
             s3_client = boto3.client(
                 's3',
@@ -272,11 +284,15 @@ def upload_item_data_and_images(request):
             # Construct URL of the uploaded file
             file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{file_name}"
             image_urls.append(file_url)
-
+            print(f"Image uploaded successfully: {file_url}")
             # Create ItemImage objects to store image URLs
             item_image = ItemImage(item=item, image=file_url)
             item_image.save()
 
         return Response({'item_id': item.id, 'image_urls': image_urls}, status=status.HTTP_201_CREATED)
+    except ValidationError as ve:
+        # Handle validation errors specifically
+        return Response({'error': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(f"Error in upload_item_data_and_images: {e}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
