@@ -2,10 +2,10 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import viewsets
 from django.contrib.auth.models import User
-from .models import Item, Conversation, Message, ItemImage
+from .models import Item, Conversation, Message, ItemImage, Favorite
 from .serializers import ItemSerializer, ConversationSerializer, MessageSerializer, CustomRegisterSerializer
 from .models import UserProfile
-from .serializers import UserProfileSerializer
+from .serializers import UserProfileSerializer, FavoriteSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -296,3 +296,43 @@ def upload_item_data_and_images(request):
     except Exception as e:
         print(f"Error in upload_item_data_and_images: {e}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+class FavoriteViewSet(viewsets.ModelViewSet):
+    queryset = Favorite.objects.all()
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get'], url_path='check/(?P<item_id>\d+)')
+    def check_favorite(self, request, item_id=None):
+        user = request.user
+        item = get_object_or_404(Item, pk=item_id)
+        favorite = Favorite.objects.filter(user=user, item=item).exists()
+        return Response({'isFavorited': favorite})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggle_favorite(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, item=item)
+
+    if not created:
+        favorite.delete()
+        return Response({'status': 'removed'}, status=status.HTTP_204_NO_CONTENT)
+
+    return Response({'status': 'added'}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def save_message(request):
+    
+    data = request.data.copy()  
+    data['sender'] = request.user.id  
+    serializer = MessageSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

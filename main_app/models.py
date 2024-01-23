@@ -81,3 +81,11 @@ class Message(models.Model):
 class ItemImage(models.Model):
     item = models.ForeignKey(Item, related_name='images', on_delete=models.CASCADE)
     image = models.URLField(max_length=200)
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='favorited_by')
+    added_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'item')  

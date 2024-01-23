@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import UserProfile, Item, Conversation, Message, ItemImage
+from .models import UserProfile, Item, Conversation, Message, ItemImage, Favorite
 from dj_rest_auth.registration.serializers import RegisterSerializer
+from django.contrib.auth.models import User
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,16 +26,21 @@ class ItemSerializer(serializers.ModelSerializer):
         read_only_fields = ('seller',)
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.SlugRelatedField(read_only=True, slug_field='username')
     sender_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = '__all__'
-    
+        fields = ['id', 'conversation', 'sender', 'text', 'timestamp', 'sender_profile']
+
     def get_sender_profile(self, obj):
         profile = UserProfile.objects.get(user=obj.sender)
         return UserProfileSerializer(profile).data
+    def create(self, validated_data):
+        # Create the Message instance
+        # If you have nested data, handle it here before saving the Message
+        message = Message.objects.create(**validated_data)
+        # Handle any nested data as needed
+        return message
 
 class ConversationSerializer(serializers.ModelSerializer):
     item_details = ItemSerializer(source='item', read_only=True)
@@ -90,3 +96,11 @@ class CustomRegisterSerializer(RegisterSerializer):
         user_profile.last_name = self.validated_data.get('last_name', '')
         user.save()
         return user
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    item = ItemSerializer(read_only=True)
+    
+    class Meta:
+        model = Favorite
+        fields = ['id', 'item']
