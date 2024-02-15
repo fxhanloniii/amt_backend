@@ -302,6 +302,10 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        return Favorite.objects.filter(user=user)
+    
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
     
@@ -336,3 +340,12 @@ def save_message(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    if request.method == 'DELETE':
+        user = request.user
+        user.delete()
+        return Response({'status': 'deleted'}, status=status.HTTP_204_NO_CONTENT)
+    return Response({'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
