@@ -9,6 +9,7 @@ myenv/
 dist/
 build/
 .env
+/env
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
