@@ -25,4 +25,5 @@ urlpatterns = [
     path('favorites/toggle/<int:item_id>/', toggle_favorite, name='toggle-favorite'),
     path('save-message/', views.save_message, name='save-message'),
     path('delete-account/', delete_account, name='delete-account'),
+    path('recent-items/', views.get_recent_items, name='recent-items'),
 ] + router.urls 

@@ -349,3 +349,10 @@ def delete_account(request):
         user.delete()
         return Response({'status': 'deleted'}, status=status.HTTP_204_NO_CONTENT)
     return Response({'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_recent_items(request):
+    recent_items = Item.objects.all().order_by('-date_posted')[:4]
+    serializer = ItemSerializer(recent_items, many=True)
+    return Response(serializer.data)
+
