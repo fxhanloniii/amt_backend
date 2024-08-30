@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db.models import Avg
 
 # Create your models here.
 
@@ -23,6 +24,12 @@ class UserProfile(models.Model):
     budget_range = models.CharField(max_length=100, blank=True)
     # Seller-specific Attributes
     ratings = models.FloatField(default=0.0)
+    number_of_ratings = models.IntegerField(default=0)
+    def add_rating(self, new_rating):
+        total_ratings = self.ratings * self.number_of_ratings
+        self.number_of_ratings += 1
+        self.ratings = (total_ratings + new_rating) / self.number_of_ratings
+        self.save()
     verified_seller = models.BooleanField(default=False)
     business_name = models.CharField(max_length=100, blank=True)
     materials_in_stock = models.TextField(blank=True)
@@ -42,11 +49,7 @@ class UserProfile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         print(f"Creating UserProfile for user: {instance.username}")
-        UserProfile.objects.create(
-            user=instance,
-            first_name=instance.first_name,
-            last_name=instance.last_name
-            )
+        UserProfile.objects.create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
@@ -59,6 +62,7 @@ class Item(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(max_length=500)
     location = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=12, blank=True) 
     material = models.CharField(max_length=100, blank=True)
     price = models.FloatField()
     date_posted = models.DateTimeField(auto_now_add=True)

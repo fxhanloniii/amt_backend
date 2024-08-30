@@ -30,6 +30,7 @@ from django.conf import settings
 import boto3
 import uuid
 from rest_framework.exceptions import ValidationError
+from dj_rest_auth.models import TokenModel
 # Create your views here.
 
 class Home(APIView):
@@ -42,6 +43,32 @@ class Home(APIView):
 
 class CustomRegisterView(RegisterView):
     serializer_class = CustomRegisterSerializer
+
+    def perform_create(self, serializer):
+        user = serializer.save(self.request)
+        user_profile = UserProfile.objects.get(user=user)
+        user_profile.zip_code = serializer.validated_data.get('zip_code', '')
+        user_profile.profile_picture_url = serializer.validated_data.get('profile_picture_url', '')
+        user_profile.save()
+        return user
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        
+        # Get or create the token for the user
+        token, created = TokenModel.objects.get_or_create(user=user)
+        
+        # Prepare the response data
+        response_data = {
+            'user': UserProfileSerializer(UserProfile.objects.get(user=user)).data,
+            'token': token.key,
+            'user_id': user.pk
+        }
+        
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
     
 
 class ItemViewSet(viewsets.ModelViewSet):
@@ -97,11 +124,19 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         if user_profile is None:
             return Response({"detail": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Update User model
+        user = user_profile.user
+        user.first_name = request.data.get('first_name', user.first_name)
+        user.last_name = request.data.get('last_name', user.last_name)
+        user.save()
+
+        # Update UserProfile model
         serializer = self.get_serializer(user_profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
         
 @api_view(['GET'])
@@ -231,6 +266,7 @@ def upload_item_data_and_images(request):
         print(f"Title: {title}")
         description = request.data.get('description')
         location = request.data.get('location')
+        zip_code = request.data.get('zip_code')
         price = request.data.get('price')
         isForSale = request.data.get('isForSale', 'false').lower() == 'true'
         isPriceNegotiable = request.data.get('isPriceNegotiable', 'false').lower() == 'true'
@@ -242,6 +278,7 @@ def upload_item_data_and_images(request):
             title=title,
             description=description,
             location=location,
+            zip_code=zip_code,
             price=price,
             isForSale=isForSale,
             isPriceNegotiable=isPriceNegotiable,
@@ -352,7 +389,139 @@ def delete_account(request):
 
 @api_view(['GET'])
 def get_recent_items(request):
-    recent_items = Item.objects.all().order_by('-date_posted')[:4]
+    recent_items = Item.objects.all().order_by('-date_posted')[:10]
     serializer = ItemSerializer(recent_items, many=True)
     return Response(serializer.data)
 
+class ProfilePictureUploadView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, format=None):
+        file = request.data.get('image')
+        if not file:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Upload the file to S3
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME
+        )
+
+        unique_id = uuid.uuid4()
+        file_extension = file.name.split('.')[-1]
+        file_name = f"uploads/{unique_id}.{file_extension}"
+
+        try:
+            s3_client.upload_fileobj(file, settings.AWS_STORAGE_BUCKET_NAME, file_name)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{file_name}"
+        return Response({'image_url': file_url}, status=status.HTTP_200_OK)
+    
+
+class UnauthenticatedProfilePictureUploadView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [AllowAny]
+    def post(self, request, format=None):
+        file = request.data.get('image')
+        if not file:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Upload the file to S3
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME
+        )
+
+        unique_id = uuid.uuid4()
+        file_extension = file.name.split('.')[-1]
+        file_name = f"uploads/{unique_id}.{file_extension}"
+
+        try:
+            s3_client.upload_fileobj(file, settings.AWS_STORAGE_BUCKET_NAME, file_name)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{file_name}"
+        return Response({'image_url': file_url}, status=status.HTTP_200_OK)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def add_additional_photos(request, item_id):
+    try:
+        item = get_object_or_404(Item, id=item_id, seller=request.user)
+        
+        # Handle image upload
+        uploaded_images = request.FILES.getlist('images')
+        image_urls = []
+        
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME
+        )
+        
+        for image in uploaded_images:
+            unique_id = uuid.uuid4()
+            file_extension = image.name.split('.')[-1]
+            file_name = f"uploads/{unique_id}.{file_extension}"
+            
+            # Upload image to S3
+            s3_client.upload_fileobj(
+                image,
+                settings.AWS_STORAGE_BUCKET_NAME,
+                file_name,
+            )
+            
+            # Construct URL of the uploaded file
+            file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{file_name}"
+            image_urls.append(file_url)
+            
+            # Save image URL in the database
+            item_image = ItemImage(item=item, image=file_url)
+            item_image.save()
+
+        return Response({'item_id': item.id, 'image_urls': image_urls}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(f"Error in add_additional_photos: {e}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_item_image(request, image_id):
+    try:
+        item_image = get_object_or_404(ItemImage, id=image_id, item__seller=request.user)
+        item_image.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_users_for_item(request, item_id):
+    item = get_object_or_404(Item, id=item_id)
+    conversations = Conversation.objects.filter(item=item)
+    users = []
+    for conversation in conversations:
+        users.extend(conversation.participants.exclude(id=request.user.id))
+    unique_users = list(set(users))  # Remove duplicates
+    user_profiles = UserProfile.objects.filter(user__in=unique_users)
+    serializer = UserProfileSerializer(user_profiles, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def rate_buyer(request, buyer_id):
+    user_profile = get_object_or_404(UserProfile, user__id=buyer_id)
+    rating = request.data.get('rating', 0)
+    user_profile.add_rating(float(rating))
+    return Response({"status": "Rating added"}, status=status.HTTP_200_OK)

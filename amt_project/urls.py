@@ -25,6 +25,8 @@ urlpatterns = [
     path('dj-rest-auth/', include('dj_rest_auth.urls')),
     # path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
     path('social-auth/', include('allauth.socialaccount.urls')),
-    path('', include('main_app.urls'))
+    path('', include('main_app.urls')),
+    path('api/v1/auth/', include('dj_rest_auth.urls')),
+    path('api/v1/auth/registration/', include('dj_rest_auth.registration.urls')),
 ]
 

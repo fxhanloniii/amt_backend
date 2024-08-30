@@ -2,11 +2,21 @@ from rest_framework import serializers
 from .models import UserProfile, Item, Conversation, Message, ItemImage, Favorite
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from django.contrib.auth.models import User
+from .models import create_user_profile
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 class UserProfileSerializer(serializers.ModelSerializer):
+
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', required=False)
+    last_name = serializers.CharField(source='user.last_name', required=False)
+    zip_code = serializers.CharField(required=False)
+
     class Meta:
         model = UserProfile
         fields = '__all__'
+        extra_fields = ['username']
 
 class ItemImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,7 +32,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ['id', 'title', 'description', 'location', 'material', 'price', 'date_posted', 'isForSale', 'isPriceNegotiable', 'category', 'seller', 'seller_profile', 'images']
+        fields = ['id', 'title', 'description', 'zip_code', 'location', 'material', 'price', 'date_posted', 'isForSale', 'isPriceNegotiable', 'category', 'seller', 'seller_profile', 'images']
         read_only_fields = ('seller',)
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -66,36 +76,25 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     
 class CustomRegisterSerializer(RegisterSerializer):
-    first_name = serializers.CharField(max_length=30, required=True)
-    last_name = serializers.CharField(max_length=30, required=True)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        print("CustomRegisterSerializer __init__ called")
-        
-    def validate(self, data):
-        # Print the data received in the validate method
-        print("validate data:", data)
-        return super().validate(data)
-
+    zip_code = serializers.CharField(max_length=12, required=True)
+    profile_picture_url = serializers.URLField(required=True, allow_null=True)
+    
+    def validate_profile_picture_url(self, value):
+        if value:
+            url_validator = URLValidator()
+            try:
+                url_validator(value)
+            except ValidationError:
+                print(f"Invalid URL received: {value}")
+                raise serializers.ValidationError("Enter a valid URL.")
+        return value
+    
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
-        # Print the cleaned data
-        print("cleaned data:", data)
-        data['first_name'] = self.validated_data.get('first_name', '')
-        data['last_name'] = self.validated_data.get('last_name', '')
+        data['zip_code'] = self.validated_data.get('zip_code', '')
+        data['profile_picture_url'] = self.validated_data.get('profile_picture_url', '')
+        print(f"Cleaned data: {data}")
         return data
-
-    def save(self, request):
-        # Print the data before saving
-        cleaned_data = self.get_cleaned_data()
-        print("saving data:", cleaned_data)
-        user = super().save(request)
-        user_profile = UserProfile.objects.get(user=user)
-        user_profile.first_name = self.validated_data.get('first_name', '')
-        user_profile.last_name = self.validated_data.get('last_name', '')
-        user.save()
-        return user
 
 class FavoriteSerializer(serializers.ModelSerializer):
 
