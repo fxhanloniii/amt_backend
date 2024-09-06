@@ -1,12 +1,12 @@
 from django.urls import path, re_path, include
 from . import views
 from rest_framework.routers import DefaultRouter
-from main_app.views import ItemViewSet, UserProfileViewSet, check_token_validity, ConversationViewSet, MessageViewSet, start_conversation, get_conversation_messages, CustomRegisterView, FavoriteViewSet, toggle_favorite, delete_account, delete_item_image, get_users_for_item
+from main_app.views import ItemViewSet, UserProfileViewSet, check_token_validity, ConversationViewSet, MessageViewSet, start_conversation, get_conversation_messages, CustomRegisterView, FavoriteViewSet, toggle_favorite, delete_account, delete_item_image, get_users_for_item, upload_profile_picture
 from main_app.views import ProfilePictureUploadView, UnauthenticatedProfilePictureUploadView
 
 router = DefaultRouter()
 router.register(r'items', ItemViewSet)
-router.register(r'profiles', UserProfileViewSet)
+# router.register(r'profiles', UserProfileViewSet)
 router.register(r'conversations', ConversationViewSet)
 router.register(r'messages', MessageViewSet)
 router.register(r'favorites', FavoriteViewSet)
@@ -30,4 +30,5 @@ urlpatterns = [
     path('items/<int:item_id>/add-photos/', views.add_additional_photos, name='add-additional-photos'),
     path('items/images/<int:image_id>/', delete_item_image, name='delete-item-image'),
     path('items/<int:item_id>/interested-users/', get_users_for_item, name='get-users-for-item'),
+    path('profiles/upload-profile-picture/', views.upload_profile_picture, name='upload-profile-picture'),
 ] + router.urls 

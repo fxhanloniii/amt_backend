@@ -102,40 +102,44 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsUserProfileOwnerOrReadOnly]
 
-    # Override retrieve method to get UserProfile by User ID
+    # Method to retrieve and update UserProfile associated with a user
     @action(detail=True, url_path='user', methods=['get', 'put', 'patch'])
     def retrieve_by_user(self, request, *args, **kwargs):
         user_id = kwargs.get('pk')  # Get user ID from URL
-
-        # Find UserProfile by user ID
-        obj = UserProfile.objects.filter(user__pk=user_id).first()
-
-        if obj is None:
-            return Response({"detail": f"A UserProfile with user ID {user_id} does not exist."}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(obj)
-        return Response(serializer.data)
-
-    @action(detail=True, url_path='user', methods=['put', 'patch'])
-    def update_by_user(self, request, *args, **kwargs):
-        user_id = kwargs.get('pk')
         user_profile = UserProfile.objects.filter(user__pk=user_id).first()
 
         if user_profile is None:
-            return Response({"detail": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": f"A UserProfile with user ID {user_id} does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Update User model
-        user = user_profile.user
-        user.first_name = request.data.get('first_name', user.first_name)
-        user.last_name = request.data.get('last_name', user.last_name)
-        user.save()
-
-        # Update UserProfile model
-        serializer = self.get_serializer(user_profile, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
+        # Differentiate between GET, PUT, and PATCH requests
+        if request.method == 'GET':
+            # Log for GET method
+            print("Inside retrieve_by_user GET method")
+            serializer = self.get_serializer(user_profile)
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method in ['PUT', 'PATCH']:
+            # Log for PUT/PATCH method
+            print("Inside retrieve_by_user PUT/PATCH method")
+            user = user_profile.user
+            user.first_name = request.data.get('first_name', user.first_name)
+            user.last_name = request.data.get('last_name', user.last_name)
+            user.save()
+
+            # Handle profile_picture_url if it's sent as an object
+            profile_data = request.data.copy()
+            if isinstance(profile_data.get('profile_picture_url'), dict):
+                profile_data['profile_picture_url'] = profile_data['profile_picture_url'].get('uri')
+
+            # Update UserProfile fields (e.g., bio, city, state, zip_code)
+            serializer = self.get_serializer(user_profile, data=profile_data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                print("Profile updated successfully")
+                return Response(serializer.data)
+            else:
+                print("Profile update failed with errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
         
@@ -525,3 +529,45 @@ def rate_buyer(request, buyer_id):
     rating = request.data.get('rating', 0)
     user_profile.add_rating(float(rating))
     return Response({"status": "Rating added"}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def upload_profile_picture(request):
+    if 'image' not in request.FILES:
+        return Response({'error': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    image = request.FILES['image']
+
+    # Initialize S3 client
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME
+    )
+
+    # Generate a unique filename
+    unique_id = uuid.uuid4()
+    file_extension = image.name.split('.')[-1]
+    file_name = f"uploads/{unique_id}.{file_extension}"
+
+    # Upload image to S3
+    try:
+        s3_client.upload_fileobj(image, settings.AWS_STORAGE_BUCKET_NAME, file_name)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Construct URL of the uploaded file
+    file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{file_name}"
+
+    # Update UserProfile with the new image URL
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        user_profile.profile_picture_url = file_url
+        user_profile.save()
+        return Response({'image_url': file_url}, status=status.HTTP_200_OK)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'UserProfile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

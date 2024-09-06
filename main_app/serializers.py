@@ -7,7 +7,6 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
 class UserProfileSerializer(serializers.ModelSerializer):
-
     username = serializers.CharField(source='user.username', read_only=True)
     first_name = serializers.CharField(source='user.first_name', required=False)
     last_name = serializers.CharField(source='user.last_name', required=False)
@@ -17,6 +16,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = '__all__'
         extra_fields = ['username']
+
+    def update(self, instance, validated_data):
+        # Handle the nested User fields (first_name, last_name)
+        user_data = validated_data.pop('user', {})
+        user = instance.user
+        
+        # Update the User model fields
+        if 'first_name' in user_data:
+            user.first_name = user_data['first_name']
+        if 'last_name' in user_data:
+            user.last_name = user_data['last_name']
+        user.save()
+
+        # Update the UserProfile fields
+        return super(UserProfileSerializer, self).update(instance, validated_data)
+
 
 class ItemImageSerializer(serializers.ModelSerializer):
     class Meta:
