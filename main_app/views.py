@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from django.contrib.auth.models import User
 from .models import Item, Conversation, Message, ItemImage, Favorite
 from .serializers import ItemSerializer, ConversationSerializer, MessageSerializer, CustomRegisterSerializer
-from .models import UserProfile
+from .models import UserProfile, GlobalStats
 from .serializers import UserProfileSerializer, FavoriteSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -571,3 +571,48 @@ def upload_profile_picture(request):
         return Response({'error': 'UserProfile not found.'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sold_item_to_someone_else(request, item_id):
+    item = get_object_or_404(Item, id=item_id, seller=request.user)
+    
+    # Increment the seller's individual items_sold counter
+    user_profile = request.user.userprofile
+    user_profile.increment_items_sold()
+    
+    # Increment the universal counter
+    global_stats = GlobalStats.get_instance()
+    global_stats.increment_items_sold()
+
+    # Delete the item
+    item.delete()
+    
+    return Response({'status': 'Item marked as sold to someone else, counters updated and item deleted'}, status=200)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def rate_buyer_and_sold_item(request, buyer_id, item_id):
+    user_profile = get_object_or_404(UserProfile, user__id=buyer_id)
+    rating = request.data.get('rating', 0)
+    user_profile.add_rating(float(rating))
+
+    # Increment the seller's items_sold counter
+    seller_profile = request.user.userprofile
+    seller_profile.increment_items_sold()
+
+    # Increment the universal counter
+    global_stats = GlobalStats.get_instance()
+    global_stats.increment_items_sold()
+
+    # Delete the item
+    item = get_object_or_404(Item, id=item_id, seller=request.user)
+    item.delete()
+
+    return Response({"status": "Rating submitted, item sold, counters updated"}, status=200)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_global_items_sold(request):
+    global_stats = GlobalStats.get_instance()
+    return Response({"items_saved_from_landfill": global_stats.items_saved_from_landfill}, status=200)

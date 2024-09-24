@@ -31,4 +31,7 @@ urlpatterns = [
     path('items/images/<int:image_id>/', delete_item_image, name='delete-item-image'),
     path('items/<int:item_id>/interested-users/', get_users_for_item, name='get-users-for-item'),
     path('profiles/upload-profile-picture/', views.upload_profile_picture, name='upload-profile-picture'),
+    path('sold-item-to-someone-else/<int:item_id>/', views.sold_item_to_someone_else, name='sold-item-to-someone-else'),
+    path('rate-buyer-and-sold-item/<int:buyer_id>/<int:item_id>/', views.rate_buyer_and_sold_item, name='rate-buyer-and-sold-item'),
+    path('global-items-sold/', views.get_global_items_sold, name='global-items-sold'),
 ] + router.urls 

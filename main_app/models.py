@@ -44,6 +44,11 @@ class UserProfile(models.Model):
     is_active = models.BooleanField(default=True)
     is_seller = models.BooleanField(default=False)
     verification_status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('verified', 'Verified')], default='pending')
+    items_sold = models.IntegerField(default=0)  # Track individual items sold
+
+    def increment_items_sold(self):
+        self.items_sold += 1
+        self.save()
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -93,3 +98,17 @@ class Favorite(models.Model):
 
     class Meta:
         unique_together = ('user', 'item')  
+
+# GlobalStats model to track platform-wide data
+class GlobalStats(models.Model):
+    items_saved_from_landfill = models.IntegerField(default=0)  # Universal item counter
+
+    def increment_items_sold(self):
+        self.items_saved_from_landfill += 1
+        self.save()
+
+    @staticmethod
+    def get_instance():
+        # Ensure there is always one GlobalStats instance
+        global_stats, created = GlobalStats.objects.get_or_create(id=1)
+        return global_stats

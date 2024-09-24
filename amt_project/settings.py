@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['3.101.60.200']
 
@@ -194,8 +194,9 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_CONFIRMATION_COOLDOWN = 180
 
 # CORS
+ALLOWED_HOSTS = ['3.101.60.200', 'ec2-3-101-60-200.us-west-1.compute.amazonaws.com']
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 CORS_ALLOW_ALL_ORIGINS = True
 
@@ -203,6 +204,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     'http://localhost:3000',  
     'http://127.0.0.1:3000',
+    'http://3.101.60.200',
 ]
 
 # REST FRAMEWORK 
