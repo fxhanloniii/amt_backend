@@ -31,6 +31,8 @@ import boto3
 import uuid
 from rest_framework.exceptions import ValidationError
 from dj_rest_auth.models import TokenModel
+from dj_rest_auth.views import PasswordResetView
+
 # Create your views here.
 
 class Home(APIView):
@@ -40,6 +42,9 @@ class Home(APIView):
             "message": "Hello World"
         }
         return Response(data)
+    
+class CustomPasswordResetView(PasswordResetView):
+    email_template_name = 'registration/reset_password_email.html'
 
 class CustomRegisterView(RegisterView):
     serializer_class = CustomRegisterSerializer
