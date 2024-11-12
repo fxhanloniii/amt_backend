@@ -34,4 +34,5 @@ urlpatterns = [
     path('sold-item-to-someone-else/<int:item_id>/', views.sold_item_to_someone_else, name='sold-item-to-someone-else'),
     path('rate-buyer-and-sold-item/<int:buyer_id>/<int:item_id>/', views.rate_buyer_and_sold_item, name='rate-buyer-and-sold-item'),
     path('global-items-sold/', views.get_global_items_sold, name='global-items-sold'),
+    
 ] + router.urls 
