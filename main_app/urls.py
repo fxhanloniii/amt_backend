@@ -3,7 +3,7 @@ from . import views
 from rest_framework.routers import DefaultRouter
 from main_app.views import ItemViewSet, UserProfileViewSet, check_token_validity, ConversationViewSet, MessageViewSet, start_conversation, get_conversation_messages, CustomRegisterView, FavoriteViewSet, toggle_favorite, delete_account, delete_item_image, get_users_for_item, upload_profile_picture
 from main_app.views import ProfilePictureUploadView, UnauthenticatedProfilePictureUploadView
-
+from .views import CustomPasswordResetView
 router = DefaultRouter()
 router.register(r'items', ItemViewSet)
 # router.register(r'profiles', UserProfileViewSet)
@@ -34,5 +34,5 @@ urlpatterns = [
     path('sold-item-to-someone-else/<int:item_id>/', views.sold_item_to_someone_else, name='sold-item-to-someone-else'),
     path('rate-buyer-and-sold-item/<int:buyer_id>/<int:item_id>/', views.rate_buyer_and_sold_item, name='rate-buyer-and-sold-item'),
     path('global-items-sold/', views.get_global_items_sold, name='global-items-sold'),
-    
+    path('dj-rest-auth/password/reset/', CustomPasswordResetView.as_view(), name='password_reset'),
 ] + router.urls 
