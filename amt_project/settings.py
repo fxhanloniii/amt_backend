@@ -185,7 +185,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-PASSWORD_RESET_EMAIL_TEMPLATE = 'registration/password_reset_email.html'
+PASSWORD_RESET_EMAIL_TEMPLATE = 'amt_backend/main_app/templates/registration/password_reset_email.html'
 
 
 ACCOUNT_EMAIL_REQUIRED = True
