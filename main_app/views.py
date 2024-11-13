@@ -44,7 +44,7 @@ class Home(APIView):
         return Response(data)
     
 class CustomPasswordResetView(PasswordResetView):
-    email_template_name = 'registration/reset_password_email.html'
+    email_template_name = 'registration/reset_password.html'
 
 class CustomRegisterView(RegisterView):
     serializer_class = CustomRegisterSerializer
