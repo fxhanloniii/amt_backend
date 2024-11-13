@@ -19,7 +19,7 @@ def send_welcome_email(sender, instance, created, **kwargs):
             'username': instance.username,
             'year': datetime.now().year,
         }
-        html_content = render_to_string('main_app/email_templates/welcome_email.html', context)
+        html_content = render_to_string('main_app/templates/email_templates/welcome_email.html', context)
         text_content = "Check out our app for more."
 
         # Set up the email with both HTML and plain-text versions
