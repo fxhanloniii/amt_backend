@@ -32,6 +32,14 @@ import uuid
 from rest_framework.exceptions import ValidationError
 from dj_rest_auth.models import TokenModel
 from dj_rest_auth.views import PasswordResetView
+from django.template.loader import get_template
+from django.http import HttpResponseServerError
+from django.core.exceptions import ImproperlyConfigured
+import logging
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+
 
 # Create your views here.
 
@@ -44,7 +52,19 @@ class Home(APIView):
         return Response(data)
     
 class CustomPasswordResetView(PasswordResetView):
-    email_template_name = 'registration/nonexistent_template.html'
+    email_template_name = 'registration/custom_reset_password.html'
+
+    def post(self, request, *args, **kwargs):
+        # Log that the post method was reached
+        print("CustomPasswordResetView post method accessed")
+
+        # Proceed with form handling as usual
+        response = super().post(request, *args, **kwargs)
+        
+        # Log the template path after form submission
+        print(f"Using email template in post method: {self.email_template_name}")
+        
+        return response
 
 class CustomRegisterView(RegisterView):
     serializer_class = CustomRegisterSerializer
